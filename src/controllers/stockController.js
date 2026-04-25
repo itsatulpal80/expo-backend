@@ -1,9 +1,11 @@
 const Invoice = require("../models/Invoice");
 const Medicine = require("../models/Medicine");
+const { ensureDbReady } = require("../config/db");
 const { ApiError } = require("../utils/apiError");
 const { normalizeInvoiceItems } = require("../utils/stockUtils");
 
 async function getStock(req, res) {
+  await ensureDbReady();
   const q = (req.query.q || "").trim();
   const distributor = (req.query.distributor || "").trim();
 
@@ -16,12 +18,14 @@ async function getStock(req, res) {
 }
 
 async function getStockById(req, res) {
+  await ensureDbReady();
   const medicine = await Medicine.findById(req.params.id);
   if (!medicine) throw new ApiError(404, "Medicine not found");
   res.json(medicine);
 }
 
 async function addFromOcr(req, res) {
+  await ensureDbReady();
   const { supplierName, invoiceNumber, invoiceDate, items = [] } = req.body;
   if (!invoiceNumber) throw new ApiError(400, "invoiceNumber is required");
 

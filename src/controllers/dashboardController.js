@@ -1,8 +1,10 @@
 const Invoice = require("../models/Invoice");
 const Medicine = require("../models/Medicine");
+const { ensureDbReady } = require("../config/db");
 const { getExpiryCounts } = require("../utils/stockUtils");
 
 async function getDashboard(req, res) {
+  await ensureDbReady();
   const invoices = await Invoice.find().select("items createdAt");
   const medicines = await Medicine.find().select("totalQuantity batches");
 
