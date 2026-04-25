@@ -2,7 +2,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const { env } = require("../config/env");
-const { assertDbReady } = require("../config/db");
+const { ensureDbReady } = require("../config/db");
 const { ApiError } = require("../utils/apiError");
 
 function signToken(user) {
@@ -17,7 +17,7 @@ function signToken(user) {
 }
 
 async function register(req, res) {
-  assertDbReady();
+  await ensureDbReady();
   const { name = "User", mobile, password, role = "pharmacist" } = req.body;
   const exists = await User.findOne({ mobile });
   if (exists) throw new ApiError(409, "Mobile already registered");
@@ -38,7 +38,7 @@ async function register(req, res) {
 }
 
 async function login(req, res) {
-  assertDbReady();
+  await ensureDbReady();
   const { mobile, password } = req.body;
   const user = await User.findOne({ mobile });
   if (!user) throw new ApiError(401, "Invalid mobile or password");

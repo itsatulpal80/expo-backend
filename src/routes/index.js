@@ -3,6 +3,7 @@ const authRoutes = require("./authRoutes");
 const ocrRoutes = require("./ocrRoutes");
 const stockRoutes = require("./stockRoutes");
 const dashboardRoutes = require("./dashboardRoutes");
+const { isDbReady } = require("../config/db");
 
 const router = express.Router();
 
@@ -31,7 +32,7 @@ router.get("/", (req, res) => {
 });
 
 router.get("/health", (req, res) => {
-  res.json({ status: "ok" });
+  res.json({ status: "ok", database: isDbReady() ? "connected" : "disconnected" });
 });
 router.use("/auth", authRoutes);
 router.use("/ocr", ocrRoutes);
