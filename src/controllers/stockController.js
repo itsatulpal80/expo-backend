@@ -124,4 +124,12 @@ async function disposeBatch(req, res) {
   }
 }
 
-module.exports = { getStock, getStockById, addFromOcr, updateDistributorName, disposeBatch };
+async function deleteMedicine(req, res) {
+  await ensureDbReady();
+  const { id } = req.params;
+  const medicine = await Medicine.findByIdAndDelete(id);
+  if (!medicine) throw new ApiError(404, "Medicine not found");
+  res.json({ message: "Medicine deleted successfully" });
+}
+
+module.exports = { getStock, getStockById, addFromOcr, updateDistributorName, disposeBatch, deleteMedicine };
