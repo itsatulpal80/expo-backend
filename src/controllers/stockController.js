@@ -32,7 +32,7 @@ async function addFromOcr(req, res) {
   const exists = await Invoice.findOne({ invoiceNumber });
   if (exists) throw new ApiError(409, "Invoice already processed");
 
-  const normalizedItems = normalizeInvoiceItems(items);
+  const normalizedItems = normalizeInvoiceItems(items, supplierName);
   if (!normalizedItems.length) {
     throw new ApiError(400, "No valid medicine items found in OCR payload");
   }
@@ -67,10 +67,14 @@ async function addFromOcr(req, res) {
     await medicine.save();
   }
 
+  const parsedDate = invoiceDate ? new Date(invoiceDate) : null;
+  const safeDate =
+    parsedDate && !isNaN(parsedDate.getTime()) ? parsedDate : new Date();
+
   const invoice = await Invoice.create({
     supplierName: supplierName || "Unknown Supplier",
     invoiceNumber,
-    invoiceDate: invoiceDate ? new Date(invoiceDate) : new Date(),
+    invoiceDate: safeDate,
     items: normalizedItems,
     createdBy: req.user.id,
   });
@@ -82,4 +86,42 @@ async function addFromOcr(req, res) {
   });
 }
 
-module.exports = { getStock, getStockById, addFromOcr };
+async function updateDistributorName(req, res) {
+  await ensureDbReady();
+  const { oldName, newName } = req.body;
+  if (!oldName || !newName) throw new ApiError(400, "oldName and newName are required");
+
+  const result = await Medicine.updateMany(
+    { distributor: oldName },
+    { $set: { distributor: newName } }
+  );
+
+  res.json({ message: "Distributor name updated successfully", modifiedCount: result.modifiedCount });
+}
+
+async function disposeBatch(req, res) {
+  await ensureDbReady();
+  const { id, batchNumber } = req.params;
+
+  const medicine = await Medicine.findById(id);
+  if (!medicine) throw new ApiError(404, "Medicine not found");
+
+  const batchIndex = medicine.batches.findIndex(b => b.batchNumber === batchNumber);
+  if (batchIndex === -1) throw new ApiError(404, "Batch not found");
+
+  const batch = medicine.batches[batchIndex];
+  medicine.totalQuantity -= batch.quantity;
+  if (medicine.totalQuantity < 0) medicine.totalQuantity = 0;
+
+  medicine.batches.splice(batchIndex, 1);
+
+  if (medicine.batches.length === 0) {
+    await Medicine.findByIdAndDelete(id);
+    return res.json({ message: "Batch disposed and medicine removed from inventory" });
+  } else {
+    await medicine.save();
+    return res.json({ message: "Batch disposed successfully", medicine });
+  }
+}
+
+module.exports = { getStock, getStockById, addFromOcr, updateDistributorName, disposeBatch };

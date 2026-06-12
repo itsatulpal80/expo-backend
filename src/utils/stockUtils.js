@@ -1,9 +1,12 @@
-function normalizeInvoiceItems(items = []) {
+function normalizeInvoiceItems(items = [], supplierName = "") {
   return items
     .filter((item) => item)
     .map((item) => ({
       name: String(item.name || "Unknown Medicine").trim() || "Unknown Medicine",
-      distributor: String(item.distributor || "Unknown").trim(),
+      distributor:
+        String(item.distributor || "").trim() ||
+        String(supplierName || "").trim() ||
+        "Unknown",
       batchNumber: String(item.batchNumber || "N/A").trim() || "N/A",
       expiryDate: item.expiryDate ? new Date(item.expiryDate) : null,
       quantity: Number(item.quantity || 0),

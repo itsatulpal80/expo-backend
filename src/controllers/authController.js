@@ -53,4 +53,24 @@ async function login(req, res) {
   });
 }
 
-module.exports = { register, login };
+async function getProfile(req, res) {
+  await ensureDbReady();
+  const user = await User.findById(req.user.id).select("-password");
+  if (!user) throw new ApiError(404, "User not found");
+  res.json(user);
+}
+
+async function updateProfile(req, res) {
+  await ensureDbReady();
+  const { name, medicalName, address, drugLicense } = req.body;
+  const user = await User.findByIdAndUpdate(
+    req.user.id,
+    { name, medicalName, address, drugLicense },
+    { new: true, runValidators: true }
+  ).select("-password");
+  
+  if (!user) throw new ApiError(404, "User not found");
+  res.json(user);
+}
+
+module.exports = { register, login, getProfile, updateProfile };
